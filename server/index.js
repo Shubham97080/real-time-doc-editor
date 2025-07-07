@@ -4,6 +4,7 @@ const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
 const dotenv = require("dotenv");
+const path = require("path");
 const Document = require("./Document");
 
 dotenv.config();
@@ -11,18 +12,27 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-app.use(cors());
+// Enable CORS for local development and production
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || "*", // you can set this to your frontend URL on Vercel
+  methods: ["GET", "POST"]
+}));
 
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:3000", // your React app URL
-    methods: ["GET", "POST"]
-  }
-});
+// Serve React static files (client/build) in production
+app.use(express.static(path.join(__dirname, "../client/build")));
 
 mongoose.connect(process.env.MONGO_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true
+}).then(() => console.log("✅ MongoDB connected"))
+  .catch(err => console.error("❌ MongoDB connection error:", err));
+
+// Socket.IO setup
+const io = new Server(server, {
+  cors: {
+    origin: process.env.CORS_ORIGIN || "*", // update in production
+    methods: ["GET", "POST"]
+  }
 });
 
 const defaultValue = "";
@@ -45,6 +55,11 @@ io.on("connection", socket => {
   });
 });
 
+// Fallback for React frontend (for client-side routing like /docs/:id)
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../client/build/index.html"));
+});
+
 async function findOrCreateDocument(id) {
   if (id == null) return;
 
@@ -53,6 +68,7 @@ async function findOrCreateDocument(id) {
   return await Document.create({ _id: id, data: defaultValue });
 }
 
+// Start the server
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
