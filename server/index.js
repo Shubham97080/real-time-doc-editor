@@ -6,31 +6,37 @@ const { Server } = require("socket.io");
 const dotenv = require("dotenv");
 const path = require("path");
 const Document = require("./Document");
+const authRoutes = require("./authRoutes"); // ✅ Step 1: Import auth routes
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 
-// Enable CORS for local development and production
+// Middleware
+app.use(express.json()); // ✅ To parse JSON in request bodies
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || "*", // you can set this to your frontend URL on Vercel
+  origin: process.env.CORS_ORIGIN || "*", // use your frontend URL in production
   methods: ["GET", "POST"]
 }));
 
-// Serve React static files (client/build) in production
+// ✅ Step 2: Use auth routes
+app.use("/api/auth", authRoutes);
+
+// ✅ Serve React static files (for production build)
 app.use(express.static(path.join(__dirname, "../client/build")));
 
+// ✅ MongoDB Connection
 mongoose.connect(process.env.MONGO_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => console.log("✅ MongoDB connected"))
   .catch(err => console.error("❌ MongoDB connection error:", err));
 
-// Socket.IO setup
+// ✅ Socket.IO setup
 const io = new Server(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN || "*", // update in production
+    origin: process.env.CORS_ORIGIN || "*",
     methods: ["GET", "POST"]
   }
 });
@@ -55,11 +61,12 @@ io.on("connection", socket => {
   });
 });
 
-// Fallback for React frontend (for client-side routing like /docs/:id)
+// ✅ Fallback for React Router (client-side routes like /docs/:id)
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../client/build/index.html"));
 });
 
+// ✅ Utility function for creating/finding document
 async function findOrCreateDocument(id) {
   if (id == null) return;
 
@@ -68,7 +75,7 @@ async function findOrCreateDocument(id) {
   return await Document.create({ _id: id, data: defaultValue });
 }
 
-// Start the server
+// ✅ Start the server
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
