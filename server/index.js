@@ -64,9 +64,11 @@ io.on("connection", socket => {
 });
 
 // ✅ React Router fallback (for routes like /docs/:id) – put this last!
+const clientBuildPath = path.resolve(__dirname, "../client/build");
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../client/build/index.html"));
+  res.sendFile("index.html", { root: clientBuildPath });
 });
+
 
 // ✅ Document helper
 async function findOrCreateDocument(id) {
