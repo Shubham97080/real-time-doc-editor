@@ -1,4 +1,5 @@
-// authRoutes.js
+// server/authRoutes.js
+
 const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -6,9 +7,9 @@ const { body, validationResult } = require("express-validator");
 const User = require("./models/User");
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretjwt"; // Replace in production
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretjwt";
 
-// Register Route
+// ✅ Register Route
 router.post("/register", [
   body("email").isEmail(),
   body("password").isLength({ min: 5 })
@@ -33,7 +34,7 @@ router.post("/register", [
   }
 });
 
-// Login Route
+// ✅ Login Route
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 

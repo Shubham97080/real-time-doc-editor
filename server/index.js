@@ -1,3 +1,4 @@
+// server/index.js
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -5,26 +6,21 @@ const http = require("http");
 const { Server } = require("socket.io");
 const dotenv = require("dotenv");
 const path = require("path");
+
 const Document = require("./Document");
-const authRoutes = require("./authRoutes"); // ✅ Step 1: Import auth routes
+const authRoutes = require("./authRoutes"); // ✅ Import auth routes
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 
-// Middleware
-app.use(express.json()); // ✅ To parse JSON in request bodies
+// ✅ Middleware
+app.use(express.json());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || "*", // use your frontend URL in production
+  origin: process.env.CORS_ORIGIN || "*",
   methods: ["GET", "POST"]
 }));
-
-// ✅ Step 2: Use auth routes
-app.use("/api/auth", authRoutes);
-
-// ✅ Serve React static files (for production build)
-app.use(express.static(path.join(__dirname, "../client/build")));
 
 // ✅ MongoDB Connection
 mongoose.connect(process.env.MONGO_URL, {
@@ -33,7 +29,13 @@ mongoose.connect(process.env.MONGO_URL, {
 }).then(() => console.log("✅ MongoDB connected"))
   .catch(err => console.error("❌ MongoDB connection error:", err));
 
-// ✅ Socket.IO setup
+// ✅ API Routes
+app.use("/api/auth", authRoutes);
+
+// ✅ Serve frontend static files
+app.use(express.static(path.join(__dirname, "../client/build")));
+
+// ✅ Socket.IO Setup
 const io = new Server(server, {
   cors: {
     origin: process.env.CORS_ORIGIN || "*",
@@ -61,12 +63,12 @@ io.on("connection", socket => {
   });
 });
 
-// ✅ Fallback for React Router (client-side routes like /docs/:id)
+// ✅ React Router fallback (for routes like /docs/:id) – put this last!
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../client/build/index.html"));
 });
 
-// ✅ Utility function for creating/finding document
+// ✅ Document helper
 async function findOrCreateDocument(id) {
   if (id == null) return;
 
